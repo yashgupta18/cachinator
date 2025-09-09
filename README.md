@@ -18,13 +18,20 @@ npm install express ioredis
 import express from 'express';
 import Redis from 'ioredis';
 import { rateLimit, cache, MemoryStore, RedisStore } from 'rate-limit-pkg';
+import { keyByHeader, keyByBearerToken, keyByQuery } from 'rate-limit-pkg';
 
 const app = express();
 const store = process.env.REDIS_URL
   ? new RedisStore(new Redis(process.env.REDIS_URL))
   : new MemoryStore();
 
+// Per-IP (default):
 app.use(rateLimit({ requests: 100, window: 60, store }));
+
+// Or token-based examples:
+app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByHeader('x-api-key', { fallbackToIp: true }) }));
+app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByBearerToken({ fallbackToIp: true }) }));
+app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByQuery('api_key', { fallbackToIp: true }) }));
 app.use(cache({ cache: true, ttl: 60, store }));
 
 app.get('/time', (_req, res) => res.json({ now: new Date().toISOString() }));
