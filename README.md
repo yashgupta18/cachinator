@@ -29,9 +29,30 @@ const store = process.env.REDIS_URL
 app.use(rateLimit({ requests: 100, window: 60, store }));
 
 // Or token-based examples:
-app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByHeader('x-api-key', { fallbackToIp: true }) }));
-app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByBearerToken({ fallbackToIp: true }) }));
-app.use(rateLimit({ requests: 100, window: 60, store, keyGenerator: keyByQuery('api_key', { fallbackToIp: true }) }));
+app.use(
+  rateLimit({
+    requests: 100,
+    window: 60,
+    store,
+    keyGenerator: keyByHeader('x-api-key', { fallbackToIp: true }),
+  }),
+);
+app.use(
+  rateLimit({
+    requests: 100,
+    window: 60,
+    store,
+    keyGenerator: keyByBearerToken({ fallbackToIp: true }),
+  }),
+);
+app.use(
+  rateLimit({
+    requests: 100,
+    window: 60,
+    store,
+    keyGenerator: keyByQuery('api_key', { fallbackToIp: true }),
+  }),
+);
 app.use(cache({ cache: true, ttl: 60, store }));
 
 app.get('/time', (_req, res) => res.json({ now: new Date().toISOString() }));
@@ -62,6 +83,52 @@ Adds `X-Cache: HIT|MISS` header. Only affects GET.
 
 - **MemoryStore**: in-process; fast; resets on restart; not shared.
 - **RedisStore**: shared across instances; uses `INCR`+`EXPIRE` and `SETEX`.
+
+#### Custom stores (pluggable)
+
+Implement your own store by matching these interfaces:
+
+```ts
+export interface RateLimitStore {
+  increment(key: string, windowMs: number): Promise<{ totalHits: number; ttlMs: number }>;
+}
+
+export interface CacheEntry {
+  body: any;
+  statusCode?: number;
+  contentType?: string;
+}
+
+export interface CacheStore {
+  get(key: string): Promise<CacheEntry | undefined>;
+  set(key: string, value: CacheEntry & { ttlMs: number }): Promise<void> | void;
+}
+```
+
+Example:
+
+```ts
+import type { RateLimitStore, CacheStore } from 'rate-limit-pkg';
+
+class MyStore implements RateLimitStore, CacheStore {
+  async increment(key: string, windowMs: number) {
+    /* ... */ return { totalHits: 1, ttlMs: windowMs };
+  }
+  async get(key: string) {
+    /* ... */ return undefined;
+  }
+  async set(
+    key: string,
+    value: { body: any; statusCode?: number; contentType?: string; ttlMs: number },
+  ) {
+    /* ... */
+  }
+}
+
+const store = new MyStore();
+app.use(rateLimit({ requests: 100, window: 60, store }));
+app.use(cache({ cache: true, ttl: 60, store }));
+```
 
 ### Scripts
 
