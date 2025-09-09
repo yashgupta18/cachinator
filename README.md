@@ -67,6 +67,7 @@ app.listen(3000, () => console.log('http://localhost:3000'));
 - **window**: seconds
 - **store**: `RateLimitStore`
 - **keyGenerator?**: `(req) => string` (default: IP)
+- **hooks?**: `{ onAllowed, onBlocked, onError }`
 
 Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
@@ -76,8 +77,46 @@ Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - **ttl**: seconds
 - **store**: `CacheStore`
 - **keyGenerator?** / **shouldBypass?**
+- **bypassPaths?**: `Array<string | RegExp>` – skip caching for matching paths
+- **hooks?**: `{ onHit, onMiss, onCacheSet, onError }`
 
 Adds `X-Cache: HIT|MISS` header. Only affects GET.
+
+Example (bypass + hooks):
+
+```ts
+app.use(
+  cache({
+    cache: true,
+    ttl: 60,
+    store,
+    bypassPaths: ['/nocache', /^\/internal\//],
+    hooks: {
+      onHit: ({ key }) => console.log('HIT', key),
+      onMiss: ({ key }) => console.log('MISS', key),
+      onCacheSet: ({ key, statusCode }) => console.log('SET', key, statusCode),
+      onError: ({ error }) => console.error('CACHE ERROR', error),
+    },
+  }),
+);
+```
+
+Example (rate limit hooks):
+
+```ts
+app.use(
+  rateLimit({
+    requests: 100,
+    window: 60,
+    store,
+    hooks: {
+      onAllowed: ({ key, remaining }) => console.log('ALLOWED', key, remaining),
+      onBlocked: ({ key }) => console.warn('BLOCKED', key),
+      onError: ({ error }) => console.error('RL ERROR', error),
+    },
+  }),
+);
+```
 
 ### Stores
 

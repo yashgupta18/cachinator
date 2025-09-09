@@ -6,10 +6,15 @@ export type RateLimitOptions = {
   window: number; // seconds
   keyGenerator?: (req: Request) => string;
   store: RateLimitStore;
+  hooks?: {
+    onAllowed?: (info: { key: string; totalHits: number; remaining: number; req: Request }) => void;
+    onBlocked?: (info: { key: string; totalHits: number; req: Request }) => void;
+    onError?: (info: { error: unknown; req: Request }) => void;
+  };
 };
 
 export function rateLimit(options: RateLimitOptions) {
-  const { requests, window, keyGenerator = (req) => req.ip, store } = options;
+  const { requests, window, keyGenerator = (req) => req.ip, store, hooks } = options;
   const windowMs = window * 1000;
 
   return async function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -23,11 +28,14 @@ export function rateLimit(options: RateLimitOptions) {
       }
 
       if (totalHits > requests) {
+        hooks?.onBlocked?.({ key, totalHits, req });
         res.status(429).json({ error: 'Too Many Requests' });
         return;
       }
+      hooks?.onAllowed?.({ key, totalHits, remaining: Math.max(0, requests - totalHits), req });
       next();
     } catch (error) {
+      hooks?.onError?.({ error, req });
       next(error);
     }
   };
