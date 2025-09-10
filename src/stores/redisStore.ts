@@ -19,7 +19,12 @@ export class RedisStore implements RateLimitStore, CacheStore {
     const raw = await this.client.get(key);
     if (!raw) return undefined;
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw) as any;
+      if (parsed && parsed.__isBase64 && typeof parsed.body === 'string') {
+        parsed.body = Buffer.from(parsed.body, 'base64');
+        delete parsed.__isBase64;
+      }
+      return parsed;
     } catch {
       return undefined;
     }
@@ -27,8 +32,14 @@ export class RedisStore implements RateLimitStore, CacheStore {
 
   async set(
     key: string,
-    value: { body: any; statusCode?: number; contentType?: string; ttlMs: number },
+    value: { body: string | Uint8Array; statusCode?: number; contentType?: string; contentEncoding?: 'br' | 'gzip'; ttlMs: number },
   ) {
-    await this.client.setex(key, Math.ceil(value.ttlMs / 1000), JSON.stringify(value));
+    const toStore = {
+      ...value,
+      // Ensure Buffer is base64-encoded for JSON storage
+      body: Buffer.isBuffer(value.body) ? (value.body as Buffer).toString('base64') : value.body,
+      __isBase64: Buffer.isBuffer(value.body) ? true : false,
+    };
+    await this.client.setex(key, Math.ceil(value.ttlMs / 1000), JSON.stringify(toStore));
   }
 }

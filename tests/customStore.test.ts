@@ -55,17 +55,19 @@ describe('pluggable custom store', () => {
     const app = express();
     const store = new InMemoryCustomStore();
     let hits = 0;
-    app.use(cache({ cache: true, ttl: 1, store }));
+    app.use(cache({ cache: true, ttl: 1, store, compression: 'off' }));
     app.get('/', (_req, res) => {
       hits += 1;
-      res.json({ hits });
+      // Ensure JSON content-type is set predictably for the test client
+      res.setHeader('Content-Type', 'application/json');
+      res.send(JSON.stringify({ hits }));
     });
 
-    const a = await request(app).get('/');
-    const b = await request(app).get('/');
+    const a = await request(app).get('/').set('Accept', 'application/json');
+    const b = await request(app).get('/').set('Accept', 'application/json');
     expect(a.headers['x-cache']).toBe('MISS');
     expect(b.headers['x-cache']).toBe('HIT');
-    expect(a.body).toEqual({ hits: 1 });
-    expect(b.body).toEqual({ hits: 1 });
+    expect(JSON.parse(a.text)).toEqual({ hits: 1 });
+    expect(JSON.parse(b.text)).toEqual({ hits: 1 });
   });
 });

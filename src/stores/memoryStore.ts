@@ -7,7 +7,7 @@ type Counter = {
 
 export class MemoryStore implements RateLimitStore, CacheStore {
   private readonly counters = new Map<string, Counter>();
-  private readonly cache = new Map<string, { body: any; statusCode?: number; contentType?: string; expiresAt: number }>();
+  private readonly cache = new Map<string, { body: string | Uint8Array; statusCode?: number; contentType?: string; contentEncoding?: 'br' | 'gzip'; expiresAt: number }>();
 
   async increment(key: string, windowMs: number): Promise<{ totalHits: number; ttlMs: number }> {
     const now = Date.now();
@@ -30,17 +30,18 @@ export class MemoryStore implements RateLimitStore, CacheStore {
       this.cache.delete(key);
       return undefined;
     }
-    return { body: entry.body, statusCode: entry.statusCode, contentType: entry.contentType };
+    return { body: entry.body, statusCode: entry.statusCode, contentType: entry.contentType, contentEncoding: entry.contentEncoding };
   }
 
   async set(
     key: string,
-    value: { body: any; statusCode?: number; contentType?: string; ttlMs: number },
+    value: { body: string | Uint8Array; statusCode?: number; contentType?: string; contentEncoding?: 'br' | 'gzip'; ttlMs: number },
   ) {
     this.cache.set(key, {
       body: value.body,
       statusCode: value.statusCode,
       contentType: value.contentType,
+      contentEncoding: value.contentEncoding,
       expiresAt: Date.now() + value.ttlMs,
     });
   }
