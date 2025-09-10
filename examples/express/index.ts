@@ -2,6 +2,7 @@ import express from 'express';
 import Redis from 'ioredis';
 import { rateLimit } from '../../src/lib/rateLimit';
 import { cache } from '../../src/lib/cache';
+import { invalidateMatchingGet, invalidateCache } from '../../src/lib/invalidate';
 import { keyByHeader } from '../../src/lib/keys';
 import { MemoryStore } from '../../src/stores/memoryStore';
 import { RedisStore } from '../../src/stores/redisStore';
@@ -79,6 +80,26 @@ app.get('/large', (_req, res) => {
   const big = 'x'.repeat(2048);
   res.type('text/plain').send(big);
 });
+
+// Example: invalidate GET cache for the same path after a mutation
+app.post('/time', invalidateMatchingGet({ store }), (_req, res) => {
+  res.json({ updated: true });
+});
+
+// Example: custom invalidation by explicit keys
+app.post('/purge',
+  invalidateCache({
+    store,
+    resolveKeys: (req) => {
+      const keys = Array.isArray(req.body?.keys) ? req.body.keys : [];
+      return keys as string[];
+    },
+    hooks: {
+      onInvalidated: ({ keys }) => console.log('[invalidate] purged', keys),
+    },
+  }),
+  (_req, res) => res.json({ ok: true }),
+);
 
 // Example route that will be bypassed by shouldBypass
 app.get('/private/data', (_req, res) => {

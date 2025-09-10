@@ -19,6 +19,7 @@ import express from 'express';
 import Redis from 'ioredis';
 import { rateLimit, cache, MemoryStore, RedisStore } from 'rate-limit-pkg';
 import { keyByHeader, keyByBearerToken, keyByQuery } from 'rate-limit-pkg';
+import { invalidateMatchingGet, invalidateCache } from 'rate-limit-pkg';
 
 const app = express();
 const store = process.env.REDIS_URL
@@ -57,6 +58,30 @@ app.use(cache({ cache: true, ttl: 60, store }));
 
 app.get('/time', (_req, res) => res.json({ now: new Date().toISOString() }));
 app.listen(3000, () => console.log('http://localhost:3000'));
+```
+
+### Invalidation middleware
+
+Invalidate the cached GET for a route after a mutation:
+
+```ts
+app.post('/users/:id', invalidateMatchingGet({ store }), (req, res) => {
+  // ...perform update
+  res.json({ ok: true });
+});
+```
+
+Purge custom keys:
+
+```ts
+app.post(
+  '/purge',
+  invalidateCache({
+    store,
+    resolveKeys: (req) => req.body.keys as string[],
+  }),
+  (req, res) => res.json({ ok: true }),
+);
 ```
 
 ### API
