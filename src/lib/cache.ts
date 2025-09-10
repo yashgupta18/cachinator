@@ -22,6 +22,11 @@ export type CacheOptions = {
   swr?: {
     enabled: boolean;
     revalidateTtlSeconds?: number; // optional background revalidation TTL
+    revalidate?: (ctx: {
+      key: string;
+      req: Request;
+      set: (value: { body: any; statusCode?: number; contentType?: string }) => Promise<void>;
+    }) => Promise<void> | void;
   };
 };
 
@@ -66,12 +71,34 @@ export function cache(options: CacheOptions) {
         res.status(cached.statusCode ?? 200).send(cached.body as any);
         hooks?.onHit?.({ key, req });
 
-        // SWR: if stale and swr.enabled, trigger background revalidation
-        if (isStale && options.swr?.enabled) {
-          // Fire-and-forget: let the downstream handler recompute and set
-          const fakeRes = new (require('stream').Writable)();
-          // Do nothing; rely on normal request lifecycle to refresh on next legit request.
-          // For simplicity, we won't double-invoke route handler here.
+        // SWR: if stale and swr.enabled, trigger background revalidation via user callback
+        if (isStale && options.swr?.enabled && options.swr.revalidate) {
+          const ttlForSetMs = (options.swr.revalidateTtlSeconds ?? options.ttl) * 1000;
+          const set = async (value: { body: any; statusCode?: number; contentType?: string }) => {
+            try {
+              // Store raw uncompressed to avoid encoding incompatibilities across clients
+              const ct = value.contentType ?? cached.contentType ?? 'application/json';
+              let raw: Buffer;
+              if (Buffer.isBuffer(value.body)) raw = value.body;
+              else if (typeof value.body === 'string') raw = Buffer.from(value.body);
+              else raw = Buffer.from(JSON.stringify(value.body));
+              await Promise.resolve(
+                store.set(key, {
+                  body: raw,
+                  statusCode: value.statusCode ?? cached.statusCode ?? 200,
+                  contentType: ct,
+                  contentEncoding: undefined,
+                  ttlMs: ttlForSetMs,
+                }),
+              );
+            } catch (e) {
+              hooks?.onError?.({ error: e, req });
+            }
+          };
+          // Fire-and-forget
+          Promise.resolve(options.swr.revalidate({ key, req, set })).catch((e) =>
+            hooks?.onError?.({ error: e, req }),
+          );
         }
         return;
       }

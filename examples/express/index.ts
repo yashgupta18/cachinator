@@ -39,7 +39,16 @@ app.use(
       return false;
     },
     bypassPaths: ['/nocache', /^\/internal\//],
-    swr: { enabled: true, revalidateTtlSeconds: 30 },
+    swr: {
+      enabled: true,
+      revalidateTtlSeconds: 30,
+      // Example revalidator: refetch or recompute the data and call ctx.set
+      revalidate: async ({ key, set }) => {
+        // Demo: set new payload with current timestamp
+        await set({ body: JSON.stringify({ refreshedAt: new Date().toISOString() }), contentType: 'application/json' });
+        console.log(`[cache] SWR refreshed ${key}`);
+      },
+    },
     hooks: {
       onHit: ({ key }) => console.log(`[cache] HIT ${key}`),
       onMiss: ({ key }) => console.log(`[cache] MISS ${key}`),

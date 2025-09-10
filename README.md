@@ -83,6 +83,7 @@ Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - **minSizeBytes?**: number (default 1024) – only compress bodies ≥ this size
 - **isCpuOverloaded?**: `() => boolean` – used to fall back from br to gzip in auto mode
 - **swr?**: `{ enabled: boolean, revalidateTtlSeconds?: number }`
+  - `revalidate?: (ctx) => Promise<void>` – background refresh handler; call `ctx.set(...)` with new payload
 
 Adds `X-Cache: HIT|MISS` header. Only affects GET.
 Example (compression + SWR + bypass):
@@ -95,7 +96,18 @@ app.use(
     store,
     compression: 'auto',
     minSizeBytes: 1024,
-    swr: { enabled: true, revalidateTtlSeconds: 30 },
+    swr: {
+      enabled: true,
+      revalidateTtlSeconds: 30,
+      revalidate: async ({ key, set }) => {
+        // recompute or refetch and update cache
+        await set({
+          body: JSON.stringify({ refreshedAt: new Date().toISOString() }),
+          contentType: 'application/json',
+        });
+        console.log('SWR refreshed', key);
+      },
+    },
     shouldBypass: (req) => req.headers['cache-control'] === 'no-cache',
     bypassPaths: ['/nocache', /^\/internal\//],
     hooks: {
