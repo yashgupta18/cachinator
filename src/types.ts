@@ -1,5 +1,10 @@
 export interface RateLimitStore {
   increment(key: string, windowMs: number): Promise<{ totalHits: number; ttlMs: number }>; // ttlMs remaining
+  // Token bucket support
+  getTokens?(key: string): Promise<{ tokens: number; lastRefill: number } | undefined>;
+  setTokens?(key: string, tokens: number, lastRefill: number, ttlMs: number): Promise<void>;
+  // Sliding window support
+  addToWindow?(key: string, timestamp: number, windowMs: number): Promise<{ count: number; oldest: number }>;
 }
 
 export interface CacheEntry {

@@ -12,12 +12,15 @@ const app = express();
 const redisUrl = process.env.REDIS_URL;
 const store = redisUrl ? new RedisStore(new Redis(redisUrl)) : new MemoryStore();
 
-// Example: switch to token-based limits via x-api-key header
+// Example: switch to token-based limits via x-api-key header with token bucket strategy
 app.use(
   rateLimit({
-    requests: 100,
-    window: 60,
+    requests: 10, // 10 requests per window
+    window: 60,   // 60 seconds
     store,
+    strategy: 'token_bucket',
+    burst: 20,    // allow bursts up to 20 requests
+    refillRate: 10/60, // refill at 10 requests per 60 seconds
     keyGenerator: keyByHeader('x-api-key', { fallbackToIp: true }),
     hooks: {
       onAllowed: ({ key, remaining }) => console.log(`[rate-limit] allowed ${key}, remaining=${remaining}`),

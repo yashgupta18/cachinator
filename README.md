@@ -92,9 +92,27 @@ app.post(
 - **window**: seconds
 - **store**: `RateLimitStore`
 - **keyGenerator?**: `(req) => string` (default: IP)
+- **strategy?**: `'fixed_window' | 'sliding_window' | 'token_bucket'` (default: `'fixed_window'`)
+- **burst?**: number (token bucket only) – max tokens (defaults to requests)
+- **refillRate?**: number (token bucket only) – tokens per second (defaults to requests/window)
 - **hooks?**: `{ onAllowed, onBlocked, onError }`
 
 Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+Example with token bucket:
+
+```ts
+app.use(
+  rateLimit({
+    requests: 10,
+    window: 60,
+    store,
+    strategy: 'token_bucket',
+    burst: 20, // allow bursts up to 20 requests
+    refillRate: 10 / 60, // refill at 10 requests per 60 seconds
+  }),
+);
+```
 
 #### cache(options)
 
