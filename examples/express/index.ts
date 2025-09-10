@@ -30,6 +30,8 @@ app.use(
     cache: true,
     ttl: 60,
     store,
+    compression: 'auto',
+    minSizeBytes: 1024,
     // Dynamically bypass caching based on request
     shouldBypass: (req) => {
       if (req.path.startsWith('/private')) return true; // sensitive routes
@@ -37,6 +39,7 @@ app.use(
       return false;
     },
     bypassPaths: ['/nocache', /^\/internal\//],
+    swr: { enabled: true, revalidateTtlSeconds: 30 },
     hooks: {
       onHit: ({ key }) => console.log(`[cache] HIT ${key}`),
       onMiss: ({ key }) => console.log(`[cache] MISS ${key}`),
@@ -60,6 +63,12 @@ app.get('/nocache/ping', (_req, res) => {
 
 app.get('/internal/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Large payload route to see brotli/gzip in action
+app.get('/large', (_req, res) => {
+  const big = 'x'.repeat(2048);
+  res.type('text/plain').send(big);
 });
 
 // Example route that will be bypassed by shouldBypass

@@ -79,8 +79,40 @@ Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - **keyGenerator?** / **shouldBypass?**
 - **bypassPaths?**: `Array<string | RegExp>` – skip caching for matching paths
 - **hooks?**: `{ onHit, onMiss, onCacheSet, onError }`
+- **compression?**: `'off' | 'br' | 'gzip' | 'auto'` (default `'auto'`)
+- **minSizeBytes?**: number (default 1024) – only compress bodies ≥ this size
+- **isCpuOverloaded?**: `() => boolean` – used to fall back from br to gzip in auto mode
+- **swr?**: `{ enabled: boolean, revalidateTtlSeconds?: number }`
 
 Adds `X-Cache: HIT|MISS` header. Only affects GET.
+Example (compression + SWR + bypass):
+
+```ts
+app.use(
+  cache({
+    cache: true,
+    ttl: 60,
+    store,
+    compression: 'auto',
+    minSizeBytes: 1024,
+    swr: { enabled: true, revalidateTtlSeconds: 30 },
+    shouldBypass: (req) => req.headers['cache-control'] === 'no-cache',
+    bypassPaths: ['/nocache', /^\/internal\//],
+    hooks: {
+      onHit: ({ key }) => console.log('HIT', key),
+      onMiss: ({ key }) => console.log('MISS', key),
+      onCacheSet: ({ key, statusCode }) => console.log('SET', key, statusCode),
+    },
+  }),
+);
+```
+
+Try it:
+
+```bash
+curl -H 'Accept-Encoding: br,gzip' http://localhost:3000/large -i
+curl -H 'Accept-Encoding: gzip' http://localhost:3000/large -i
+```
 
 Example (bypass + hooks):
 

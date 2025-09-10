@@ -33,6 +33,17 @@ export class MemoryStore implements RateLimitStore, CacheStore {
     return { body: entry.body, statusCode: entry.statusCode, contentType: entry.contentType, contentEncoding: entry.contentEncoding };
   }
 
+  async getWithTTL(key: string) {
+    const now = Date.now();
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    const ttlMs = entry.expiresAt - now;
+    return {
+      entry: { body: entry.body, statusCode: entry.statusCode, contentType: entry.contentType, contentEncoding: entry.contentEncoding },
+      ttlMs,
+    };
+  }
+
   async set(
     key: string,
     value: { body: string | Uint8Array; statusCode?: number; contentType?: string; contentEncoding?: 'br' | 'gzip'; ttlMs: number },
@@ -44,5 +55,9 @@ export class MemoryStore implements RateLimitStore, CacheStore {
       contentEncoding: value.contentEncoding,
       expiresAt: Date.now() + value.ttlMs,
     });
+  }
+
+  async delete(key: string) {
+    this.cache.delete(key);
   }
 }
