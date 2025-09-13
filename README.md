@@ -1,15 +1,18 @@
-## Rate Limiting + Caching Middleware (TypeScript)
+# Cachinator
 
-Simple middlewares for Express that provide:
+Rate limiting + caching middleware for Express with Redis and memory fallback.
+
+## Features
 
 - **Rate limiting** with window-based counters
 - **Response caching** for GET requests with TTL
 - **Stores**: Redis (shared, production) or in-memory (dev/tests)
+- **TypeScript** support with full type definitions
 
-### Installation
+## Installation
 
 ```bash
-npm install express ioredis
+npm install cachinator express ioredis
 ```
 
 ### Quick start (Express)
@@ -17,9 +20,9 @@ npm install express ioredis
 ```ts
 import express from 'express';
 import Redis from 'ioredis';
-import { rateLimit, cache, MemoryStore, RedisStore } from 'rate-limit-pkg';
-import { keyByHeader, keyByBearerToken, keyByQuery } from 'rate-limit-pkg';
-import { invalidateMatchingGet, invalidateCache } from 'rate-limit-pkg';
+import { rateLimit, cache, MemoryStore, RedisStore } from 'cachinator';
+import { keyByHeader, keyByBearerToken, keyByQuery } from 'cachinator';
+import { invalidateMatchingGet, invalidateCache } from 'cachinator';
 
 const app = express();
 const store = process.env.REDIS_URL
@@ -234,7 +237,7 @@ export interface CacheStore {
 Example:
 
 ```ts
-import type { RateLimitStore, CacheStore } from 'rate-limit-pkg';
+import type { RateLimitStore, CacheStore } from 'cachinator';
 
 class MyStore implements RateLimitStore, CacheStore {
   async increment(key: string, windowMs: number) {
@@ -265,15 +268,24 @@ app.use(cache({ cache: true, ttl: 60, store }));
 
 ### CI/CD & Releases
 
-- GitHub Actions Workflows:
-  - CI: builds and tests on pushes/PRs to `main`
-  - Release: publishes to npm when a tag `v*.*.*` is pushed
-- Secrets required:
-  - `NPM_TOKEN` (repo secret) for `npm publish`
-- Release flow:
-  1. Update version in `package.json` or use tag-only flow
-  2. Push tag `vX.Y.Z` to GitHub
-  3. Release workflow builds and publishes to npm
+- **Automated releases** with semantic-release
+- **Conventional commits** for automatic versioning
+- **GitHub Actions** for CI/CD
+- **NPM publishing** on every release
+
+#### Release Process
+
+1. Make changes with conventional commit messages:
+   - `feat: add new feature` → Minor version bump
+   - `fix: resolve bug` → Patch version bump
+   - `feat!: breaking change` → Major version bump
+2. Push to `main` branch
+3. Semantic-release automatically:
+   - Analyzes commits
+   - Updates version
+   - Generates changelog
+   - Publishes to npm
+   - Creates GitHub release
 
 ### Roadmap
 
