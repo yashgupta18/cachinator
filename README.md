@@ -147,6 +147,12 @@ Access the dashboard at `/express-guard/dashboard`:
 - Top endpoints by hits
 - Auto-refreshing every 5 seconds
 
+#### 📊 Dashboard Preview
+
+Here’s the real-time monitoring dashboard you get out of the box:
+
+![Dashboard Screenshot](./assets/dashboard.png)
+
 #### Log Enrichment
 
 Enhanced logging with cache and rate-limit information:
