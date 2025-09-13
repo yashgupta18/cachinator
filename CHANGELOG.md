@@ -1,3 +1,14 @@
+# [1.1.0](https://github.com/yashgupta18/cachinator/compare/v1.0.0...v1.1.0) (2025-09-13)
+
+
+### Features
+
+* Add Histogram Metrics for Latency ([32dfbc2](https://github.com/yashgupta18/cachinator/commit/32dfbc26646a08e185b6d02c2aec910219989f02))
+* Add Histogram Metrics for Latency ([74bbdcc](https://github.com/yashgupta18/cachinator/commit/74bbdcc11356127880314e18790e388f7cbae618))
+* Add Histogram Metrics for Latency ([5f741d5](https://github.com/yashgupta18/cachinator/commit/5f741d5b1558d7e81a829953ccf768a0e2d3bfa1))
+* Add Histogram Metrics for Latency ([2acc792](https://github.com/yashgupta18/cachinator/commit/2acc7924e71796d986b3ca67581ef46720199dd4))
+* Add prometheus endpoint, dashboard monitoring ([12f50d8](https://github.com/yashgupta18/cachinator/commit/12f50d8238bfdce948ed0e203aa526235e655df5))
+
 # 1.0.0 (2025-09-13)
 
 

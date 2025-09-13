@@ -1,6 +1,6 @@
 {
   "name": "cachinator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Rate limiting + caching middleware for Express with Redis and memory fallback",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
