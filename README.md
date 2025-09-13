@@ -8,6 +8,11 @@ Rate limiting + caching middleware for Express with Redis and memory fallback.
 - **Response caching** for GET requests with TTL
 - **Stores**: Redis (shared, production) or in-memory (dev/tests)
 - **TypeScript** support with full type definitions
+- **Monitoring & Observability**:
+  - Prometheus metrics endpoint (`/metrics`)
+  - Real-time dashboard (`/express-guard/dashboard`)
+  - Log enrichment with cache and rate-limit info
+  - Charts showing requests over time, cache hit ratio, and top endpoints
 
 ## Installation
 
@@ -20,11 +25,27 @@ npm install cachinator express ioredis
 ```ts
 import express from 'express';
 import Redis from 'ioredis';
-import { rateLimit, cache, MemoryStore, RedisStore } from 'cachinator';
+import {
+  rateLimit,
+  cache,
+  MemoryStore,
+  RedisStore,
+  prometheusMetrics,
+  createMetricsMiddleware,
+  createDashboard,
+  logEnrichment,
+} from 'cachinator';
 import { keyByHeader, keyByBearerToken, keyByQuery } from 'cachinator';
 import { invalidateMatchingGet, invalidateCache } from 'cachinator';
 
 const app = express();
+
+// Monitoring setup
+app.use(logEnrichment({ enabled: true }));
+app.use(createMetricsMiddleware());
+app.use(prometheusMetrics({ path: '/metrics' }));
+app.use(createDashboard({ path: '/express-guard/dashboard' }));
+
 const store = process.env.REDIS_URL
   ? new RedisStore(new Redis(process.env.REDIS_URL))
   : new MemoryStore();
@@ -61,6 +82,57 @@ app.use(cache({ cache: true, ttl: 60, store }));
 
 app.get('/time', (_req, res) => res.json({ now: new Date().toISOString() }));
 app.listen(3000, () => console.log('http://localhost:3000'));
+```
+
+### Monitoring & Observability
+
+Cachinator includes comprehensive monitoring features:
+
+#### Prometheus Metrics
+
+Access metrics at `/metrics` endpoint:
+
+- `cachinator_cache_hits_total` - Total cache hits
+- `cachinator_cache_misses_total` - Total cache misses
+- `cachinator_cache_hit_ratio` - Cache hit ratio (0-1)
+- `cachinator_rate_limit_blocks_total` - Total rate limit blocks
+- `cachinator_requests_total` - Total requests
+- `cachinator_response_time_seconds` - Average response time
+- `cachinator_endpoint_hits_total` - Hits per endpoint
+
+#### Real-time Dashboard
+
+Access the dashboard at `/express-guard/dashboard`:
+
+- Live metrics and statistics
+- Charts showing requests over time
+- Cache hit ratio visualization
+- Top endpoints by hits
+- Auto-refreshing every 5 seconds
+
+#### Log Enrichment
+
+Enhanced logging with cache and rate-limit information:
+
+```ts
+app.use(
+  logEnrichment({
+    enabled: true,
+    logLevel: 'info',
+    includeUserAgent: true,
+    includeResponseTime: true,
+    customFields: (req, res) => ({
+      userId: req.headers['x-user-id'],
+      sessionId: req.headers['x-session-id'],
+    }),
+  }),
+);
+
+// Use enriched logging in your routes
+app.get('/api/data', (req, res) => {
+  req.log.info('Data requested', { endpoint: '/api/data' });
+  // ... your logic
+});
 ```
 
 ### Invalidation middleware

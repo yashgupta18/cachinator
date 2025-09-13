@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { RateLimitStore } from '../types';
+import { metricsCollector } from './metrics';
 
 export type RateLimitOptions = {
   requests: number;
@@ -54,6 +55,8 @@ export function rateLimit(options: RateLimitOptions) {
 
       const limit = strategy === 'token_bucket' ? (burst ?? requests) : requests;
       if (totalHits > limit) {
+        // Record rate limit block metrics
+        metricsCollector.recordRateLimitBlock();
         hooks?.onBlocked?.({ key, totalHits, req });
         res.status(429).json({ error: 'Too Many Requests' });
         return;

@@ -2,6 +2,10 @@ export * from './lib/rateLimit';
 export * from './lib/cache';
 export * from './lib/keys';
 export * from './lib/invalidate';
+export * from './lib/metrics';
+export * from './lib/prometheus';
+export * from './lib/dashboard';
+export * from './lib/logEnrichment';
 export * from './stores/memoryStore';
-export * from './stores/redisStore'
+export * from './stores/redisStore';
 export type { RateLimitStore, CacheStore, CacheEntry } from './types';

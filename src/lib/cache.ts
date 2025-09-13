@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { CacheStore } from '../types';
+import { metricsCollector } from './metrics';
 
 export type CacheOptions = {
   cache: boolean;
@@ -69,6 +70,9 @@ export function cache(options: CacheOptions) {
         }
         const isStale = cachedWithTtl ? cachedWithTtl.ttlMs <= 0 : false;
         res.status(cached.statusCode ?? 200).send(cached.body as any);
+
+        // Record cache hit metrics
+        metricsCollector.recordCacheHit();
         hooks?.onHit?.({ key, req });
 
         // SWR: if stale and swr.enabled, trigger background revalidation via user callback
@@ -152,6 +156,9 @@ export function cache(options: CacheOptions) {
           });
           hooks?.onCacheSet?.({ key, req, statusCode: res.statusCode });
           res.setHeader('X-Cache', 'MISS');
+
+          // Record cache miss metrics
+          metricsCollector.recordCacheMiss();
           hooks?.onMiss?.({ key, req });
 
           if (contentEncoding) {
