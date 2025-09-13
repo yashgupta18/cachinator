@@ -47,6 +47,8 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           echo "NPM config file created:"
           cat ~/.npmrc
+          echo "Token length: $(echo '${{ secrets.NPM_TOKEN }}' | wc -c)"
+          echo "Token starts with: $(echo '${{ secrets.NPM_TOKEN }}' | cut -c1-10)"
 
       - name: Test NPM Authentication
         run: |
