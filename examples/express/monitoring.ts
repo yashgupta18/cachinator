@@ -20,71 +20,83 @@ const store = process.env.REDIS_URL
 app.use(express.json());
 
 // Log enrichment middleware (should be early in the middleware stack)
-app.use(logEnrichment({
-  enabled: true,
-  logLevel: 'info',
-  includeUserAgent: true,
-  includeResponseTime: true,
-  customFields: (req, res) => ({
-    userId: req.headers['x-user-id'] || 'anonymous',
-    sessionId: req.headers['x-session-id'] || 'unknown',
+app.use(
+  logEnrichment({
+    enabled: true,
+    logLevel: 'info',
+    includeUserAgent: true,
+    includeResponseTime: true,
+    customFields: (req, res) => ({
+      userId: req.headers['x-user-id'] || 'anonymous',
+      sessionId: req.headers['x-session-id'] || 'unknown',
+    }),
   }),
-}));
+);
 
 // Metrics collection middleware
 app.use(createMetricsMiddleware());
 
 // Prometheus metrics endpoint
-app.use(prometheusMetrics({
-  path: '/metrics',
-  collectDefaultMetrics: true,
-}));
+app.use(
+  prometheusMetrics({
+    path: '/metrics',
+    collectDefaultMetrics: true,
+  }),
+);
 
 // Dashboard route
-app.use(createDashboard({
-  path: '/express-guard/dashboard',
-  title: 'Cachinator Monitoring Dashboard',
-  refreshInterval: 5,
-}));
+app.use(
+  createDashboard({
+    path: '/express-guard/dashboard',
+    title: 'Cachinator Monitoring Dashboard',
+    refreshInterval: 5,
+  }),
+);
 
 // Rate limiting middleware
-app.use(rateLimit({
-  requests: 100,
-  window: 60, // 1 minute
-  store,
-  hooks: {
-    onAllowed: ({ key, remaining, req }) => {
-      req.log.info('Rate limit check passed', { key, remaining });
+app.use(
+  rateLimit({
+    requests: 100,
+    window: 60, // 1 minute
+    store,
+    hooks: {
+      onAllowed: ({ key, remaining, req }) => {
+        req.log.info('Rate limit check passed', { key, remaining });
+      },
+      onBlocked: ({ key, totalHits, req }) => {
+        req.log.warn('Rate limit exceeded', { key, totalHits });
+      },
+      onError: ({ error, req }) => {
+        const err = error instanceof Error ? error : new Error(String(error));
+        req.log.error('Rate limit error', { error: err.message });
+      },
     },
-    onBlocked: ({ key, totalHits, req }) => {
-      req.log.warn('Rate limit exceeded', { key, totalHits });
-    },
-    onError: ({ error, req }) => {
-      req.log.error('Rate limit error', { error: error.message });
-    },
-  },
-}));
+  }),
+);
 
 // Caching middleware
-app.use(cache({
-  cache: true,
-  ttl: 60, // 1 minute
-  store,
-  hooks: {
-    onHit: ({ key, req }) => {
-      req.log.info('Cache hit', { key });
+app.use(
+  cache({
+    cache: true,
+    ttl: 60, // 1 minute
+    store,
+    hooks: {
+      onHit: ({ key, req }) => {
+        req.log.info('Cache hit', { key });
+      },
+      onMiss: ({ key, req }) => {
+        req.log.info('Cache miss', { key });
+      },
+      onCacheSet: ({ key, statusCode, req }) => {
+        req.log.info('Cache set', { key, statusCode });
+      },
+      onError: ({ error, req }) => {
+        const err = error instanceof Error ? error : new Error(String(error));
+        req.log.error('Cache error', { error: err.message });
+      },
     },
-    onMiss: ({ key, req }) => {
-      req.log.info('Cache miss', { key });
-    },
-    onCacheSet: ({ key, statusCode, req }) => {
-      req.log.info('Cache set', { key, statusCode });
-    },
-    onError: ({ error, req }) => {
-      req.log.error('Cache error', { error: error.message });
-    },
-  },
-}));
+  }),
+);
 
 // Sample routes
 app.get('/api/users', (req, res) => {
