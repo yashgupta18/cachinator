@@ -39,7 +39,6 @@ jobs:
       - name: Debug NPM Configuration
         run: |
           echo "NPM_TOKEN exists: ${{ secrets.NPM_TOKEN != '' }}"
-          echo "NPM_TOKEN length: ${{ length(secrets.NPM_TOKEN) }}"
           echo "NPM registry: $(npm config get registry)"
           echo "NPM whoami (should fail): $(npm whoami || echo 'npm whoami failed as expected')"
 
