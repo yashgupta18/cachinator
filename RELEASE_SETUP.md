@@ -111,8 +111,35 @@ If you need to manually trigger a release:
 
 ### Permission Denied
 
-- Verify your NPM_TOKEN has the correct permissions
-- Ensure the package name in package.json is available on npm
+- **Check GH_PAT secret exists**: Go to your repo → Settings → Secrets and variables → Actions, verify `GH_PAT` is listed
+- **Verify GH_PAT permissions**: The token needs `repo` scope (Full control of private repositories)
+- **Check token format**: Make sure there are no extra spaces or characters when copying the token
+- **Verify NPM_TOKEN has the correct permissions**
+- **Ensure the package name in package.json is available on npm**
+
+### GitHub PAT Troubleshooting
+
+If you're still getting permission errors:
+
+1. **Verify the secret was added correctly**:
+   - Go to your repository settings
+   - Check that `GH_PAT` appears in the secrets list
+   - Make sure there are no typos in the secret name
+
+2. **Test the token manually**:
+
+   ```bash
+   # Test if the token works
+   curl -H "Authorization: token YOUR_GH_PAT" https://api.github.com/user
+   ```
+
+3. **Check token scopes**:
+   - Go to GitHub.com → Settings → Developer settings → Personal access tokens
+   - Find your token and verify it has `repo` scope checked
+
+4. **Create a new token if needed**:
+   - Sometimes tokens can be corrupted during copy/paste
+   - Delete the old `GH_PAT` secret and create a new one
 
 ### Version Conflicts
 

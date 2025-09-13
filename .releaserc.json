@@ -6,6 +6,7 @@
       "prerelease": true
     }
   ],
+  "repositoryUrl": "https://github.com/yashgupta18/cachinator.git",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
