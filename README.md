@@ -1,6 +1,11 @@
-# Cachinator
+<div align="center">
+<img src="assets/cachinator.jpg" alt="Cachinator Logo" width="200"/>
 
-Rate limiting + caching middleware for Express with Redis and memory fallback.
+#### Rate Limiting, Caching, Monitoring
+
+# Open source express middleware for Rate limiting & caching
+
+</div>
 
 ## Features
 
