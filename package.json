@@ -33,12 +33,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yashgupta18/rate-cache-middleware.git"
+    "url": "https://github.com/yashgupta18/cachinator.git"
   },
   "bugs": {
-    "url": "https://github.com/yashgupta18/rate-cache-middleware/issues"
+    "url": "https://github.com/yashgupta18/cachinator/issues"
   },
-  "homepage": "https://github.com/yashgupta18/rate-cache-middleware#readme",
+  "homepage": "https://github.com/yashgupta18/cachinator#readme",
   "publishConfig": {
     "access": "public"
   },
