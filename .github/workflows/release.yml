@@ -44,11 +44,17 @@ jobs:
 
       - name: Configure NPM Token
         run: |
+          # Try different npmrc formats
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
           echo "NPM config file created:"
           cat ~/.npmrc
           echo "Token length: $(echo '${{ secrets.NPM_TOKEN }}' | wc -c)"
           echo "Token starts with: $(echo '${{ secrets.NPM_TOKEN }}' | cut -c1-10)"
+
+          # Try alternative authentication method
+          npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
+          echo "NPM config set via npm config command"
 
       - name: Test NPM Authentication
         run: |
