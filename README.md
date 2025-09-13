@@ -1,11 +1,13 @@
 <div align="center">
-<img src="assets/cachinator.jpg" alt="Cachinator Logo" width="200"/>
+<img src="assets/cachinator.png" alt="Cachinator Logo" width="200"/>
 
 #### Rate Limiting, Caching, Monitoring
 
 # Open source express middleware for Rate limiting & caching
 
 </div>
+
+🚀 Cachinator is a lightweight Express middleware that combines rate limiting and caching with Redis + in-memory fallback. It speeds up APIs, protects against abuse, and keeps responses consistent. Out of the box, you get auto cache invalidation, Prometheus metrics, and a real-time dashboard to monitor traffic, cache hit ratio, and top endpoints. Simple to integrate, production-ready, and built for developers who want performance without complexity.
 
 ## Features
 
