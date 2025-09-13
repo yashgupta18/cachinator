@@ -141,6 +141,36 @@ If you're still getting permission errors:
    - Sometimes tokens can be corrupted during copy/paste
    - Delete the old `GH_PAT` secret and create a new one
 
+### NPM Token Troubleshooting
+
+If you're still getting npm authentication errors:
+
+1. **Verify NPM_TOKEN secret exists**:
+   - Go to your repository settings
+   - Check that `NPM_TOKEN` appears in the secrets list
+   - Make sure there are no typos in the secret name
+
+2. **Check token type**:
+   - Go to `https://www.npmjs.com/settings/tokens`
+   - Verify your token is of type "Automation" (not "Publish" or "Read-only")
+
+3. **Test token manually**:
+
+   ```bash
+   # Test if the token works
+   echo "//registry.npmjs.org/:_authToken=YOUR_NPM_TOKEN" > ~/.npmrc
+   npm whoami
+   ```
+
+4. **Check 2FA settings**:
+   - Go to `https://www.npmjs.com/settings/security`
+   - If 2FA is enabled, set level to "Authorization only"
+
+5. **Create a new token**:
+   - Delete the old `NPM_TOKEN` secret
+   - Create a new "Automation" token
+   - Add it as `NPM_TOKEN` secret
+
 ### Version Conflicts
 
 - If a version already exists, semantic-release will skip the release

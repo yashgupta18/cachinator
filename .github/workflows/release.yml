@@ -36,6 +36,23 @@ jobs:
           echo "Git remote URL: $(git remote get-url origin)"
           echo "Current branch: $(git branch --show-current)"
 
+      - name: Debug NPM Configuration
+        run: |
+          echo "NPM_TOKEN exists: ${{ secrets.NPM_TOKEN != '' }}"
+          echo "NPM_TOKEN length: ${{ length(secrets.NPM_TOKEN) }}"
+          echo "NPM registry: $(npm config get registry)"
+          echo "NPM whoami (should fail): $(npm whoami || echo 'npm whoami failed as expected')"
+
+      - name: Configure NPM Token
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "NPM config file created:"
+          cat ~/.npmrc
+
+      - name: Test NPM Authentication
+        run: |
+          npm whoami
+
       - name: Release with Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
