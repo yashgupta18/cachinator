@@ -22,10 +22,24 @@ You need to configure the following secrets in your GitHub repository:
   4. Name: `NPM_TOKEN`
   5. Value: Paste your npm token
 
-### 2. GITHUB_TOKEN
+### 2. GH_PAT (GitHub Personal Access Token)
 
-- **Purpose**: Automatically provided by GitHub Actions
-- **Note**: This is automatically available in GitHub Actions, no manual setup required
+- **Purpose**: Allows semantic-release to push commits and create releases
+- **Why needed**: The default GITHUB_TOKEN has limited permissions and cannot push back to the repository
+- **How to get it**:
+  1. Go to GitHub.com → Settings → Developer settings → Personal access tokens → Tokens (classic)
+  2. Click "Generate new token (classic)"
+  3. Give it a descriptive name like "Cachinator Release Token"
+  4. Select these scopes:
+     - `repo` (Full control of private repositories)
+     - `write:packages` (if you plan to use GitHub Packages)
+  5. Click "Generate token" and copy it immediately
+- **How to set it**:
+  1. Go to your GitHub repository
+  2. Settings → Secrets and variables → Actions
+  3. Click "New repository secret"
+  4. Name: `GH_PAT`
+  5. Value: Paste your GitHub PAT
 
 ## How It Works
 
