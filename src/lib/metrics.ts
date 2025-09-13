@@ -25,18 +25,18 @@ export class MetricsCollector {
 
   // Histogram buckets for response time (in seconds)
   private readonly responseTimeBuckets = [
-    0.001,  // 1ms
-    0.005,  // 5ms
-    0.01,   // 10ms
-    0.025,  // 25ms
-    0.05,   // 50ms
-    0.1,    // 100ms
-    0.25,   // 250ms
-    0.5,    // 500ms
-    1.0,    // 1s
-    2.5,    // 2.5s
-    5.0,    // 5s
-    10.0,   // 10s
+    0.001, // 1ms
+    0.005, // 5ms
+    0.01, // 10ms
+    0.025, // 25ms
+    0.05, // 50ms
+    0.1, // 100ms
+    0.25, // 250ms
+    0.5, // 500ms
+    1.0, // 1s
+    2.5, // 2.5s
+    5.0, // 5s
+    10.0, // 10s
     Number.POSITIVE_INFINITY, // +Inf
   ];
 
@@ -93,12 +93,12 @@ export class MetricsCollector {
 
   getPrometheusMetrics(): string {
     const current = this.getCurrentMetrics();
-    const cacheHitRatio = current.cacheHits + current.cacheMisses > 0
-      ? current.cacheHits / (current.cacheHits + current.cacheMisses)
-      : 0;
-    const avgResponseTime = current.responseTimeCount > 0
-      ? current.responseTimeSum / current.responseTimeCount
-      : 0;
+    const cacheHitRatio =
+      current.cacheHits + current.cacheMisses > 0
+        ? current.cacheHits / (current.cacheHits + current.cacheMisses)
+        : 0;
+    const avgResponseTime =
+      current.responseTimeCount > 0 ? current.responseTimeSum / current.responseTimeCount : 0;
 
     let metrics = `# HELP cachinator_cache_hits_total Total number of cache hits
 # TYPE cachinator_cache_hits_total counter
@@ -183,12 +183,12 @@ cachinator_endpoint_hits_total{endpoint="${sanitizedEndpoint}"} ${hits}
     const current = this.getCurrentMetrics();
     const history = this.getMetricsHistory();
 
-    const cacheHitRatio = current.cacheHits + current.cacheMisses > 0
-      ? current.cacheHits / (current.cacheHits + current.cacheMisses)
-      : 0;
-    const avgResponseTime = current.responseTimeCount > 0
-      ? current.responseTimeSum / current.responseTimeCount
-      : 0;
+    const cacheHitRatio =
+      current.cacheHits + current.cacheMisses > 0
+        ? current.cacheHits / (current.cacheHits + current.cacheMisses)
+        : 0;
+    const avgResponseTime =
+      current.responseTimeCount > 0 ? current.responseTimeSum / current.responseTimeCount : 0;
 
     // Get top 10 endpoints by hits
     const topEndpoints = Array.from(current.endpointHits.entries())
@@ -203,7 +203,8 @@ cachinator_endpoint_hits_total{endpoint="${sanitizedEndpoint}"} ${hits}
       cacheHits: data.cacheHits,
       cacheMisses: data.cacheMisses,
       rateLimitBlocks: data.rateLimitBlocks,
-      avgResponseTime: data.responseTimeCount > 0 ? data.responseTimeSum / data.responseTimeCount : 0,
+      avgResponseTime:
+        data.responseTimeCount > 0 ? data.responseTimeSum / data.responseTimeCount : 0,
     }));
 
     return {
@@ -226,6 +227,9 @@ cachinator_endpoint_hits_total{endpoint="${sanitizedEndpoint}"} ${hits}
 export const metricsCollector = new MetricsCollector();
 
 // Auto-snapshot every 60 seconds
-setInterval(() => {
-  metricsCollector.snapshot();
-}, 60000);
+if (process.env.NODE_ENV !== 'test') {
+  const interval = setInterval(() => {
+    metricsCollector.snapshot();
+  }, 60000);
+  interval.unref();
+}
