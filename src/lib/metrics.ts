@@ -5,6 +5,7 @@ export interface MetricsData {
   totalRequests: number;
   responseTimeSum: number;
   responseTimeCount: number;
+  responseTimeBuckets: Map<string, number>; // bucket -> count
   endpointHits: Map<string, number>;
   timestamp: number;
 }
@@ -17,9 +18,27 @@ export class MetricsCollector {
     totalRequests: 0,
     responseTimeSum: 0,
     responseTimeCount: 0,
+    responseTimeBuckets: new Map(),
     endpointHits: new Map(),
     timestamp: Date.now(),
   };
+
+  // Histogram buckets for response time (in seconds)
+  private readonly responseTimeBuckets = [
+    0.001,  // 1ms
+    0.005,  // 5ms
+    0.01,   // 10ms
+    0.025,  // 25ms
+    0.05,   // 50ms
+    0.1,    // 100ms
+    0.25,   // 250ms
+    0.5,    // 500ms
+    1.0,    // 1s
+    2.5,    // 2.5s
+    5.0,    // 5s
+    10.0,   // 10s
+    Number.POSITIVE_INFINITY, // +Inf
+  ];
 
   private history: MetricsData[] = [];
   private readonly maxHistorySize = 1000; // Keep last 1000 data points
@@ -41,8 +60,27 @@ export class MetricsCollector {
     this.metrics.responseTimeSum += responseTime;
     this.metrics.responseTimeCount++;
 
+    // Record response time in histogram buckets
+    this.recordResponseTimeBucket(responseTime);
+
     const currentHits = this.metrics.endpointHits.get(endpoint) || 0;
     this.metrics.endpointHits.set(endpoint, currentHits + 1);
+  }
+
+  private recordResponseTimeBucket(responseTimeMs: number): void {
+    const responseTimeSeconds = responseTimeMs / 1000;
+
+    // Find the appropriate bucket for this response time
+    for (let i = 0; i < this.responseTimeBuckets.length; i++) {
+      const bucket = this.responseTimeBuckets[i];
+      const bucketKey = bucket === Number.POSITIVE_INFINITY ? '+Inf' : bucket.toString();
+
+      if (responseTimeSeconds <= bucket) {
+        const currentCount = this.metrics.responseTimeBuckets.get(bucketKey) || 0;
+        this.metrics.responseTimeBuckets.set(bucketKey, currentCount + 1);
+        break;
+      }
+    }
   }
 
   getCurrentMetrics(): MetricsData {
@@ -82,9 +120,27 @@ cachinator_rate_limit_blocks_total ${current.rateLimitBlocks}
 # TYPE cachinator_requests_total counter
 cachinator_requests_total ${current.totalRequests}
 
-# HELP cachinator_response_time_seconds Average response time in seconds
-# TYPE cachinator_response_time_seconds gauge
-cachinator_response_time_seconds ${avgResponseTime / 1000}
+# HELP cachinator_response_time_seconds Response time histogram
+# TYPE cachinator_response_time_seconds histogram
+cachinator_response_time_seconds_bucket{le="0.001"} ${current.responseTimeBuckets.get('0.001') || 0}
+cachinator_response_time_seconds_bucket{le="0.005"} ${current.responseTimeBuckets.get('0.005') || 0}
+cachinator_response_time_seconds_bucket{le="0.01"} ${current.responseTimeBuckets.get('0.01') || 0}
+cachinator_response_time_seconds_bucket{le="0.025"} ${current.responseTimeBuckets.get('0.025') || 0}
+cachinator_response_time_seconds_bucket{le="0.05"} ${current.responseTimeBuckets.get('0.05') || 0}
+cachinator_response_time_seconds_bucket{le="0.1"} ${current.responseTimeBuckets.get('0.1') || 0}
+cachinator_response_time_seconds_bucket{le="0.25"} ${current.responseTimeBuckets.get('0.25') || 0}
+cachinator_response_time_seconds_bucket{le="0.5"} ${current.responseTimeBuckets.get('0.5') || 0}
+cachinator_response_time_seconds_bucket{le="1.0"} ${current.responseTimeBuckets.get('1.0') || 0}
+cachinator_response_time_seconds_bucket{le="2.5"} ${current.responseTimeBuckets.get('2.5') || 0}
+cachinator_response_time_seconds_bucket{le="5.0"} ${current.responseTimeBuckets.get('5.0') || 0}
+cachinator_response_time_seconds_bucket{le="10.0"} ${current.responseTimeBuckets.get('10.0') || 0}
+cachinator_response_time_seconds_bucket{le="+Inf"} ${current.responseTimeBuckets.get('+Inf') || 0}
+cachinator_response_time_seconds_sum ${current.responseTimeSum / 1000}
+cachinator_response_time_seconds_count ${current.responseTimeCount}
+
+# HELP cachinator_response_time_seconds_avg Average response time in seconds (for backward compatibility)
+# TYPE cachinator_response_time_seconds_avg gauge
+cachinator_response_time_seconds_avg ${avgResponseTime / 1000}
 
 `;
 
@@ -117,6 +173,7 @@ cachinator_endpoint_hits_total{endpoint="${sanitizedEndpoint}"} ${hits}
       totalRequests: 0,
       responseTimeSum: 0,
       responseTimeCount: 0,
+      responseTimeBuckets: new Map(),
       endpointHits: new Map(),
       timestamp: Date.now(),
     };
@@ -158,6 +215,7 @@ cachinator_endpoint_hits_total{endpoint="${sanitizedEndpoint}"} ${hits}
         totalRequests: current.totalRequests,
         avgResponseTime,
         topEndpoints,
+        responseTimeBuckets: current.responseTimeBuckets,
       },
       history: timeSeriesData,
     };

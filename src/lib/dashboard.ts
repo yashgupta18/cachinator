@@ -208,6 +208,17 @@ export function createDashboard(options: DashboardOptions = {}) {
             </div>
         </div>
 
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Response Time Distribution</div>
+                <canvas id="response-time-histogram"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Response Time Percentiles</div>
+                <canvas id="response-time-percentiles"></canvas>
+            </div>
+        </div>
+
         <div class="endpoints-table">
             <div class="table-header">Top Endpoints by Hits</div>
             <div id="endpoints-list">
@@ -324,11 +335,169 @@ export function createDashboard(options: DashboardOptions = {}) {
             }
         });
 
+        // Response time histogram
+        const responseTimeBuckets = ${JSON.stringify(dashboardData.current.responseTimeBuckets ? Array.from(dashboardData.current.responseTimeBuckets.entries()) : [])};
+        const bucketLabels = ['1ms', '5ms', '10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1s', '2.5s', '5s', '10s', '+Inf'];
+        const bucketValues = bucketLabels.map((_, index) => {
+            const bucketKey = index === 12 ? '+Inf' : (index === 11 ? '10.0' :
+                index === 10 ? '5.0' : index === 9 ? '2.5' : index === 8 ? '1.0' :
+                index === 7 ? '0.5' : index === 6 ? '0.25' : index === 5 ? '0.1' :
+                index === 4 ? '0.05' : index === 3 ? '0.025' : index === 2 ? '0.01' :
+                index === 1 ? '0.005' : '0.001');
+            return responseTimeBuckets.find(([key]) => key === bucketKey)?.[1] || 0;
+        });
+
+        const histogramCtx = document.getElementById('response-time-histogram').getContext('2d');
+        const histogramChart = new Chart(histogramCtx, {
+            type: 'bar',
+            data: {
+                labels: bucketLabels,
+                datasets: [{
+                    label: 'Requests',
+                    data: bucketValues,
+                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                    borderColor: '#3498db',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Response Time'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Requests'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: '#3498db',
+                        borderWidth: 1,
+                        callbacks: {
+                            title: function(context) {
+                                return 'Response Time ≤ ' + context[0].label;
+                            },
+                            label: function(context) {
+                                return 'Requests: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Response time percentiles
+        const totalRequests = ${dashboardData.current.totalRequests};
+        const percentiles = [50, 75, 90, 95, 99];
+        const percentileValues = percentiles.map(p => {
+            // Simple percentile calculation from histogram buckets
+            const targetCount = Math.ceil((p / 100) * totalRequests);
+            let cumulativeCount = 0;
+
+            for (let i = 0; i < bucketValues.length; i++) {
+                cumulativeCount += bucketValues[i];
+                if (cumulativeCount >= targetCount) {
+                    const bucketThreshold = i === 12 ? 10000 : i === 11 ? 10 : i === 10 ? 5 :
+                        i === 9 ? 2.5 : i === 8 ? 1 : i === 7 ? 0.5 : i === 6 ? 0.25 :
+                        i === 5 ? 0.1 : i === 4 ? 0.05 : i === 3 ? 0.025 :
+                        i === 2 ? 0.01 : i === 1 ? 0.005 : 0.001;
+                    return bucketThreshold * 1000; // Convert to milliseconds
+                }
+            }
+            return 10000; // Default to 10s if not found
+        });
+
+        const percentilesCtx = document.getElementById('response-time-percentiles').getContext('2d');
+        const percentilesChart = new Chart(percentilesCtx, {
+            type: 'line',
+            data: {
+                labels: percentiles.map(p => p + 'th'),
+                datasets: [{
+                    label: 'Response Time (ms)',
+                    data: percentileValues,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#e74c3c',
+                    pointBorderColor: '#e74c3c',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Percentile'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Response Time (ms)'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: '#e74c3c',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(1) + 'ms';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
         // Auto-refresh functionality
         setInterval(() => {
             fetch('${path}/data')
                 .then(response => response.json())
                 .then(data => {
+                    // Update stats
                     document.getElementById('total-requests').textContent = data.current.totalRequests;
                     document.getElementById('cache-hits').textContent = data.current.cacheHits;
                     document.getElementById('cache-misses').textContent = data.current.cacheMisses;
@@ -344,6 +513,42 @@ export function createDashboard(options: DashboardOptions = {}) {
                             <div class="hits">\${endpoint.hits}</div>
                         </div>\`
                     ).join('');
+
+                    // Update response time histogram
+                    const responseTimeBuckets = data.current.responseTimeBuckets ? Array.from(data.current.responseTimeBuckets.entries()) : [];
+                    const bucketValues = bucketLabels.map((_, index) => {
+                        const bucketKey = index === 12 ? '+Inf' : (index === 11 ? '10.0' :
+                            index === 10 ? '5.0' : index === 9 ? '2.5' : index === 8 ? '1.0' :
+                            index === 7 ? '0.5' : index === 6 ? '0.25' : index === 5 ? '0.1' :
+                            index === 4 ? '0.05' : index === 3 ? '0.025' : index === 2 ? '0.01' :
+                            index === 1 ? '0.005' : '0.001');
+                        return responseTimeBuckets.find(([key]) => key === bucketKey)?.[1] || 0;
+                    });
+
+                    histogramChart.data.datasets[0].data = bucketValues;
+                    histogramChart.update('none');
+
+                    // Update percentiles chart
+                    const totalRequests = data.current.totalRequests;
+                    const percentileValues = percentiles.map(p => {
+                        const targetCount = Math.ceil((p / 100) * totalRequests);
+                        let cumulativeCount = 0;
+
+                        for (let i = 0; i < bucketValues.length; i++) {
+                            cumulativeCount += bucketValues[i];
+                            if (cumulativeCount >= targetCount) {
+                                const bucketThreshold = i === 12 ? 10000 : i === 11 ? 10 : i === 10 ? 5 :
+                                    i === 9 ? 2.5 : i === 8 ? 1 : i === 7 ? 0.5 : i === 6 ? 0.25 :
+                                    i === 5 ? 0.1 : i === 4 ? 0.05 : i === 3 ? 0.025 :
+                                    i === 2 ? 0.01 : i === 1 ? 0.005 : 0.001;
+                                return bucketThreshold * 1000;
+                            }
+                        }
+                        return 10000;
+                    });
+
+                    percentilesChart.data.datasets[0].data = percentileValues;
+                    percentilesChart.update('none');
                 })
                 .catch(error => console.error('Failed to refresh data:', error));
         }, ${refreshInterval * 1000});

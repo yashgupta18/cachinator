@@ -92,13 +92,50 @@ Cachinator includes comprehensive monitoring features:
 
 Access metrics at `/metrics` endpoint:
 
+**Counters:**
+
 - `cachinator_cache_hits_total` - Total cache hits
 - `cachinator_cache_misses_total` - Total cache misses
-- `cachinator_cache_hit_ratio` - Cache hit ratio (0-1)
 - `cachinator_rate_limit_blocks_total` - Total rate limit blocks
 - `cachinator_requests_total` - Total requests
-- `cachinator_response_time_seconds` - Average response time
 - `cachinator_endpoint_hits_total` - Hits per endpoint
+
+**Gauges:**
+
+- `cachinator_cache_hit_ratio` - Cache hit ratio (0-1)
+- `cachinator_response_time_seconds_avg` - Average response time
+
+**Histograms:**
+
+- `cachinator_response_time_seconds` - Response time histogram
+  - `cachinator_response_time_seconds_bucket{le="0.001"}` - Requests ≤ 1ms
+  - `cachinator_response_time_seconds_bucket{le="0.005"}` - Requests ≤ 5ms
+  - `cachinator_response_time_seconds_bucket{le="0.01"}` - Requests ≤ 10ms
+  - `cachinator_response_time_seconds_bucket{le="0.025"}` - Requests ≤ 25ms
+  - `cachinator_response_time_seconds_bucket{le="0.05"}` - Requests ≤ 50ms
+  - `cachinator_response_time_seconds_bucket{le="0.1"}` - Requests ≤ 100ms
+  - `cachinator_response_time_seconds_bucket{le="0.25"}` - Requests ≤ 250ms
+  - `cachinator_response_time_seconds_bucket{le="0.5"}` - Requests ≤ 500ms
+  - `cachinator_response_time_seconds_bucket{le="1.0"}` - Requests ≤ 1s
+  - `cachinator_response_time_seconds_bucket{le="2.5"}` - Requests ≤ 2.5s
+  - `cachinator_response_time_seconds_bucket{le="5.0"}` - Requests ≤ 5s
+  - `cachinator_response_time_seconds_bucket{le="10.0"}` - Requests ≤ 10s
+  - `cachinator_response_time_seconds_bucket{le="+Inf"}` - All requests
+  - `cachinator_response_time_seconds_sum` - Total response time
+  - `cachinator_response_time_seconds_count` - Total request count
+
+**Calculating Percentiles:**
+
+```promql
+# 95th percentile response time
+histogram_quantile(0.95, rate(cachinator_response_time_seconds_bucket[5m]))
+
+# 99th percentile response time
+histogram_quantile(0.99, rate(cachinator_response_time_seconds_bucket[5m]))
+
+# 50th percentile (median) response time
+histogram_quantile(0.50, rate(cachinator_response_time_seconds_bucket[5m]))
+```
 
 #### Real-time Dashboard
 
