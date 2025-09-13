@@ -1,5 +1,5 @@
 <div align="center">
-<img src="assets/cachelogo.png" alt="Cachinator Logo" width="200"/>
+<img src="assets/cachelogo.png" alt="Cachinator Logo" width="30%"/>
 
 #### Rate Limiting, Caching, Monitoring
 
