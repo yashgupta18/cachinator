@@ -50,7 +50,9 @@ jobs:
 
       - name: Test NPM Authentication
         run: |
+          echo "Testing npm authentication..."
           npm whoami
+          echo "NPM user info retrieved successfully"
 
       - name: Release with Semantic Release
         env:
