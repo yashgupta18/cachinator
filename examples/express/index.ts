@@ -16,32 +16,38 @@ const app = express();
 app.use(express.json());
 
 // Log enrichment middleware
-app.use(logEnrichment({
-  enabled: true,
-  logLevel: 'info',
-  includeUserAgent: true,
-  includeResponseTime: true,
-  customFields: (req, res) => ({
-    userId: req.headers['x-user-id'] || 'anonymous',
-    sessionId: req.headers['x-session-id'] || 'unknown',
+app.use(
+  logEnrichment({
+    enabled: true,
+    logLevel: 'info',
+    includeUserAgent: true,
+    includeResponseTime: true,
+    customFields: (req, res) => ({
+      userId: req.headers['x-user-id'] || 'anonymous',
+      sessionId: req.headers['x-session-id'] || 'unknown',
+    }),
   }),
-}));
+);
 
 // Metrics collection middleware
 app.use(createMetricsMiddleware());
 
 // Prometheus metrics endpoint
-app.use(prometheusMetrics({
-  path: '/metrics',
-  collectDefaultMetrics: true,
-}));
+app.use(
+  prometheusMetrics({
+    path: '/metrics',
+    collectDefaultMetrics: true,
+  }),
+);
 
 // Dashboard route
-app.use(createDashboard({
-  path: '/express-guard/dashboard',
-  title: 'Cachinator Example Dashboard',
-  refreshInterval: 5,
-}));
+app.use(
+  createDashboard({
+    path: '/express-guard/dashboard',
+    title: 'Cachinator Example Dashboard',
+    refreshInterval: 5,
+  }),
+);
 
 const redisUrl = process.env.REDIS_URL;
 const store = redisUrl ? new RedisStore(new Redis(redisUrl)) : new MemoryStore();
@@ -50,11 +56,11 @@ const store = redisUrl ? new RedisStore(new Redis(redisUrl)) : new MemoryStore()
 app.use(
   rateLimit({
     requests: 10, // 10 requests per window
-    window: 60,   // 60 seconds
+    window: 60, // 60 seconds
     store,
     strategy: 'token_bucket',
-    burst: 20,    // allow bursts up to 20 requests
-    refillRate: 10/60, // refill at 10 requests per 60 seconds
+    burst: 20, // allow bursts up to 20 requests
+    refillRate: 10 / 60, // refill at 10 requests per 60 seconds
     keyGenerator: keyByHeader('x-api-key', { fallbackToIp: true }),
     hooks: {
       onAllowed: ({ key, remaining, req }) => {
@@ -64,7 +70,8 @@ app.use(
         req.log.warn('Rate limit exceeded', { key, totalHits });
       },
       onError: ({ error, req }) => {
-        req.log.error('Rate limit error', { error: error.message });
+        const err = error instanceof Error ? error : new Error(String(error));
+        req.log.error('Rate limit error', { error: err.message });
       },
     },
   }),
@@ -90,7 +97,10 @@ app.use(
       // Example revalidator: refetch or recompute the data and call ctx.set
       revalidate: async ({ key, set }) => {
         // Demo: set new payload with current timestamp
-        await set({ body: JSON.stringify({ refreshedAt: new Date().toISOString() }), contentType: 'application/json' });
+        await set({
+          body: JSON.stringify({ refreshedAt: new Date().toISOString() }),
+          contentType: 'application/json',
+        });
         console.log(`[cache] SWR refreshed ${key}`);
       },
     },
@@ -105,7 +115,8 @@ app.use(
         req.log.info('Cache set', { key, statusCode });
       },
       onError: ({ error, req }) => {
-        req.log.error('Cache error', { error: error.message });
+        const err = error instanceof Error ? error : new Error(String(error));
+        req.log.error('Cache error', { error: err.message });
       },
     },
   }),
@@ -174,7 +185,8 @@ app.post('/time', invalidateMatchingGet({ store }), (_req, res) => {
 });
 
 // Example: custom invalidation by explicit keys
-app.post('/purge',
+app.post(
+  '/purge',
   invalidateCache({
     store,
     resolveKeys: (req) => {
