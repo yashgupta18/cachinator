@@ -261,6 +261,19 @@ app.use(cache({ cache: true, ttl: 60, store }));
 - `npm run dev` – run example app
 - `npm run build` – compile to `dist/`
 - `npm test` – run tests
+- `npm publish` – publish to npm (CI will publish on tags)
+
+### CI/CD & Releases
+
+- GitHub Actions Workflows:
+  - CI: builds and tests on pushes/PRs to `main`
+  - Release: publishes to npm when a tag `v*.*.*` is pushed
+- Secrets required:
+  - `NPM_TOKEN` (repo secret) for `npm publish`
+- Release flow:
+  1. Update version in `package.json` or use tag-only flow
+  2. Push tag `vX.Y.Z` to GitHub
+  3. Release workflow builds and publishes to npm
 
 ### Roadmap
 
