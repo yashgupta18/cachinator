@@ -4,7 +4,7 @@
 #### Rate Limiting, Caching, Monitoring
 
 # Open source express middleware for Rate limiting & caching
-
+<a href="https://www.producthunt.com/products/cachinator?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-cachinator" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1017294&theme=light&t=1758188332284" alt="Cachinator - Open&#0032;source&#0032;express&#0032;middleware&#0032;for&#0032;Rate&#0032;limiting&#0032;&#0038;&#0032;caching | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </div>
 
 🚀 Cachinator is a lightweight Express middleware that combines rate limiting and caching with Redis + in-memory fallback. It speeds up APIs, protects against abuse, and keeps responses consistent. Out of the box, you get auto cache invalidation, Prometheus metrics, and a real-time dashboard to monitor traffic, cache hit ratio, and top endpoints. Simple to integrate, production-ready, and built for developers who want performance without complexity.
